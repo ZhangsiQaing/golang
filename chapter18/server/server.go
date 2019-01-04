@@ -38,6 +38,7 @@ func main(){
 
 	listen,err := net.Listen("tcp","0.0.0.0:8888")
 	if err != nil{
+
 		fmt.Println("listen error = ",err)
 		return
 	}
