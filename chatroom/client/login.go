@@ -14,7 +14,7 @@ func login(userId int,userPwd string) (err error) {
 	//fmt.Println(" userId = %d userPwd = %s",userId,userPwd)
 
 	//return nil
-	conn,err := net.Dial("tcp", "127.0.0.1:8888")
+	conn,err := net.Dial("tcp", "127.0.0.1:8889")
 	defer conn.Close()
 	if err != nil {
 		fmt.Println("net.Dial err = ", err)
