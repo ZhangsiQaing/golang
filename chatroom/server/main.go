@@ -3,22 +3,105 @@ package main
 import (
 	"net"
 	"fmt"
+	"syst/chatroom/common/message"
+	"syst/chatroom/client/utils"
+	"encoding/json"
+	"io"
 )
+
+
+func serverProcessLogin(conn net.Conn,mes *message.Message) (err error) {
+	//var mes message.Message
+	var loginMes message.LoginMes
+	json.Unmarshal([]byte(mes.Data),&loginMes)
+	if err != nil {
+		fmt.Println("json.Unmarshal fail err = ",err)
+		return
+	}
+	//先声明一个　resMes
+	var resMes message.Message
+	resMes.Type = message.LoginResMesType
+
+	//再声明一个LoginResMes,并完成赋值
+	var loginResMes message.LoginResMes
+
+
+	if loginMes.UserId == 100 && loginMes.UserPwd == "123456" {
+		//合法
+		loginResMes.Code = 200
+	}else{
+		//不合法
+		loginResMes.Code = 500 //500状态码，表示该用户不存在
+		loginResMes.Error = "该用户不存在，请注册再使用..."
+	}
+
+	//序列化
+	data,err := json.Marshal(loginResMes)
+	if err != nil {
+		fmt.Println("json.Marshal fail",err)
+		return
+	}
+
+	//４.将data赋值给 resMes.Data
+	resMes.Data = string(data)
+
+	//5.对resMes 进行序列化,准备发送
+	data,err = json.Marshal(resMes)
+	if err != nil {
+		fmt.Println("json.Marshal fail",err)
+		return
+	}
+
+	//6.发送data,我们将其封装到writePkg函数
+	err = WritePkg(conn,data)
+	return nil
+}
+
+//编写一个ServerProcessMes 函数
+//功能:根据客户端发送消息种类不同，决定调用那个函数来处理
+func serverProcessMes(conn net.Conn,mes *message.Message) (err error){
+	//fmt.Println(json.Unmarshal(mes))
+	switch mes.Type {
+	   case message.LoginMesType:
+	   	//处理服务器登录
+	   	  err = serverProcessLogin(conn,mes)
+
+		   //处理登录逻辑
+		   case message.RegisterMesType:
+		   	return
+		//处理注册
+		default:
+		    fmt.Println("消息不存在，无法处理...")
+	}
+	return nil
+ }
+
+
+
 
 func process(conn net.Conn){
 	//读客户端发送的信息
     defer conn.Close()
 
-    //循环的客户端发送的信息
+    //循环接收客户端发送的信息
     for {
-    	buf := make([]byte,8096)
-    	fmt.Println("读取客户端发送的数据....")
-    	n,err := conn.Read(buf[:4])
-    	if n != 4 || err != nil {
-    		fmt.Println("conn.Read err = ", err)
-    		return
+		mes,err := readPkg(conn)
+		//fmt.Println(err)
+		if err != nil {
+			if err == io.EOF{
+				fmt.Println("客户端退出，服务端也退出..")
+			}else {
+				fmt.Println("readPkg err = ", err)
+				return
+			}
 		}
-		fmt.Println("读到的buf=",buf[:4])
+		err = serverProcessMes(conn,&mes)
+		if err != nil {
+			fmt.Println("readPkg(conn) err=",err)
+			return
+		}
+		fmt.Println("mes =",mes)
+		return
 	}
 }
 

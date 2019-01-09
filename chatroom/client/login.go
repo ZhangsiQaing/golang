@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"syst/chatroom/common/message"
 	"encoding/json"
-	"encoding/binary"
 )
 
 func login(userId int,userPwd string) (err error) {
@@ -50,18 +49,27 @@ func login(userId int,userPwd string) (err error) {
 	//7.1宪法data的长度发送给服务器
 	//conn.Write(len(data))
 	//先获取到data的长度->转成一个表示长度的byte切片
-	var pkgLen uint32
-	pkgLen = uint32(len(data))
-	var buf [4]byte
-	binary.BigEndian.PutUint32(buf[0:4],pkgLen)
-	//发送长度
-	n,err := conn.Write(buf[:4])
-	if n != 4 || err != nil {
-		fmt.Println("conn.Write(bytes) fail",err)
+    err = WritePkg(conn,data)
+    if err != nil {
+    	fmt.Println("write data mes err=",err)
+    	return
+	}
+
+	//fmt.Printf("客户端，发送消息的长度＝%d 内容=%s",len(data),string(data))
+	mes,err = readPkg(conn)
+	if err != nil{
+		fmt.Println("readPkg(conn) err=",err)
 		return
 	}
 
-	fmt.Printf("客户端，发送消息的长度＝%d 内容=%s",len(data),string(data))
+	var loginResMes message.LoginResMes
+	//将mes的data反序列化成　ＬoginResMes
+	err = json.Unmarshal([]byte(mes.Data),&loginResMes)
+	if loginResMes.Code == 200 {
+		fmt.Println("登录成功")
+	}else if loginResMes.Code == 500 {
+		fmt.Println(loginResMes.Error)
+	}
 	return
 
 }
