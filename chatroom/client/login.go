@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"syst/chatroom/common/message"
 	"encoding/json"
+	"syst/chatroom/common/utils"
 )
 
 func login(userId int,userPwd string) (err error) {
@@ -49,14 +50,14 @@ func login(userId int,userPwd string) (err error) {
 	//7.1宪法data的长度发送给服务器
 	//conn.Write(len(data))
 	//先获取到data的长度->转成一个表示长度的byte切片
-    err = WritePkg(conn,data)
+    err = utils.WritePkg(conn,data)
     if err != nil {
     	fmt.Println("write data mes err=",err)
     	return
 	}
 
 	//fmt.Printf("客户端，发送消息的长度＝%d 内容=%s",len(data),string(data))
-	mes,err = readPkg(conn)
+	mes,err = utils.ReadPkg(conn)
 	if err != nil{
 		fmt.Println("readPkg(conn) err=",err)
 		return
